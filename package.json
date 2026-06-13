@@ -1,0 +1,37 @@
+{
+  "name": "bolna-call-tracker",
+  "version": "1.0.0",
+  "description": "Outbound call management system integrated with Bolna AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "bolna",
+    "calls",
+    "voice-ai"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.79.0",
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.5.0",
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^7.5.0",
+    "multer": "^2.1.1",
+    "openai": "^6.32.0",
+    "pg": "^8.20.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

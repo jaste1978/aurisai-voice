@@ -1,0 +1,32 @@
+# Root level old Express app
+node_modules
+public
+routes
+models
+middleware
+services
+*.md
+*.txt
+*.sh
+db.js
+server.js
+test-api.js
+
+# Client
+client/node_modules
+client/dist
+client/.env*
+
+# Backend
+backend/node_modules
+backend/dist
+backend/.env*
+backend/coverage
+
+# Git
+.git
+.gitignore
+
+# Misc
+.DS_Store
+*.log

@@ -1,0 +1,32 @@
+# This file controls what gets uploaded to Cloud Build
+# (different from .dockerignore which controls the Docker build)
+
+.gcloudignore
+.gitignore
+.git
+
+# Old Express app files (not needed for Docker build)
+node_modules/
+db.js
+server.js
+test-api.js
+middleware/
+models/
+routes/
+services/
+public/
+*.md
+*.txt
+GETTING_STARTED.sh
+gcp-setup.sh
+
+# Client node_modules and build cache
+client/node_modules/
+client/dist/
+client/.env*
+
+# Backend node_modules and build artifacts
+backend/node_modules/
+backend/dist/
+backend/coverage/
+backend/.env*

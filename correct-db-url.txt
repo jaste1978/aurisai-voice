@@ -1,0 +1,7 @@
+PASSWORD: -qM*uusk2N6e/v+2
+
+ENCODED PASSWORD: -qM%2AuusK2N6e%2Fv%2B2
+
+CORRECT DATABASE_URL:
+postgresql://appuser:-qM%2AuusK2N6e%2Fv%2B2@/bolna_calls?host=/cloudsql/aiagents-490508:asia-south1:augmont-db
+

@@ -1,0 +1,163 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Customer {
+  id          Int      @id @default(autoincrement())
+  customerId  String   @unique @default(uuid()) @map("customer_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  phoneNumber String   @map("phone_number") @db.VarChar(50)
+  email       String?  @db.VarChar(255)
+  language    String   @default("en") @db.VarChar(10)
+  notes       String?
+  status      String   @default("active") @db.VarChar(20)
+  calls       Call[]
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("customers")
+}
+
+model Call {
+  id                   Int       @id @default(autoincrement())
+  callId               String    @unique @default(uuid()) @map("call_id") @db.Uuid
+  customerId           Int?      @map("customer_id")
+  customer             Customer? @relation(fields: [customerId], references: [id])
+  bolnaExecutionId     String?   @map("bolna_execution_id") @db.VarChar(255)
+  phoneNumber          String?   @map("phone_number") @db.VarChar(50)
+  status               String    @default("queued") @db.VarChar(20)
+  agentId              String?   @map("agent_id") @db.VarChar(255)
+  agentName            String?   @map("agent_name") @db.VarChar(255)
+  callStartTime        DateTime? @map("call_start_time") @db.Timestamptz
+  callEndTime          DateTime? @map("call_end_time") @db.Timestamptz
+  duration             Int       @default(0)
+  transcript           String    @default("")
+  recordingUrl         String?   @map("recording_url") @db.VarChar(500)
+  recordingDuration    Int?      @map("recording_duration")
+  agentResponseOutcome String?   @map("agent_response_outcome")
+  agentResponseNotes   String?   @map("agent_response_notes")
+  agentResponseMetadata Json?    @map("agent_response_metadata")
+  customerFeedbackRating Int?    @map("customer_feedback_rating")
+  customerFeedbackComments String? @map("customer_feedback_comments")
+  errorMessage         String?   @map("error_message")
+  errorCode            String?   @map("error_code") @db.VarChar(100)
+  language             String?   @db.VarChar(10)
+  transferredToAgent   Boolean   @default(false) @map("transferred_to_agent")
+  transferredAgentName String?   @map("transferred_agent_name") @db.VarChar(255)
+  bolnaResponse        Json?     @map("bolna_response")
+  behavioralInsights   String?   @map("behavioral_insights")
+  extractedData        Json?     @map("extracted_data")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("calls")
+}
+
+model Batch {
+  id              Int      @id @default(autoincrement())
+  batchId         String?  @unique @map("batch_id") @db.VarChar(255)
+  bolnaBatchId    String?  @map("bolna_batch_id") @db.VarChar(255)
+  name            String?  @db.VarChar(255)
+  agentId         String?  @map("agent_id") @db.VarChar(255)
+  agentName       String?  @map("agent_name") @db.VarChar(255)
+  fromPhoneNumber String?  @map("from_phone_number") @db.VarChar(50)
+  totalContacts   Int      @default(0) @map("total_contacts")
+  status          String   @default("created") @db.VarChar(50)
+  fileName        String?  @map("file_name") @db.VarChar(255)
+  webhookUrl      String?  @map("webhook_url") @db.VarChar(500)
+  bolnaResponse   Json?    @map("bolna_response")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("batches")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  userId       String   @unique @default(uuid()) @map("user_id") @db.Uuid
+  name         String   @db.VarChar(255)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         String   @default("user") @db.VarChar(20)
+  permissions  Json     @default("{\"dashboard\":true,\"customers\":{\"view\":true,\"manage\":false},\"calls\":{\"view\":true,\"trigger\":false},\"bulk\":{\"view\":false,\"manage\":false}}")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdBy    Int?     @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("users")
+}
+
+model ReportTemplate {
+  id         Int      @id @default(autoincrement())
+  templateId String   @unique @default(uuid()) @map("template_id") @db.Uuid
+  name       String   @db.VarChar(255)
+  agentId    String?  @map("agent_id") @db.VarChar(255)
+  fields     Json     @default("[]")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("report_templates")
+}
+
+model AgentConfig {
+  id                   Int      @id @default(autoincrement())
+  agentId              String   @unique @map("agent_id") @db.VarChar(255)
+  // Freshdesk
+  freshdeskEnabled     Boolean  @default(false) @map("freshdesk_enabled")
+  freshdeskDomain      String?  @map("freshdesk_domain") @db.VarChar(255)
+  freshdeskApiKey      String?  @map("freshdesk_api_key") @db.VarChar(500)
+  // Google Chat
+  gchatEnabled         Boolean  @default(false) @map("gchat_enabled")
+  gchatWebhookUrl      String?  @map("gchat_webhook_url") @db.Text
+  gchatSendTranscript  Boolean  @default(true) @map("gchat_send_transcript")
+  gchatSendSummary     Boolean  @default(true) @map("gchat_send_summary")
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("agent_configs_v2")
+}
+
+model ScheduledCampaign {
+  id              Int       @id @default(autoincrement())
+  campaignId      String    @unique @default(uuid()) @map("campaign_id") @db.Uuid
+  name            String    @db.VarChar(255)
+  agentId         String    @map("agent_id") @db.VarChar(255)
+  agentName       String?   @map("agent_name") @db.VarChar(255)
+  fromPhoneNumber String    @map("from_phone_number") @db.VarChar(50)
+  contacts        Json      @default("[]")      // array of {contact_number, name, ...}
+  recurrence      String    @default("once") @db.VarChar(20) // once | daily | weekly | monthly
+  scheduledTime   String    @map("scheduled_time") @db.VarChar(5)  // "HH:MM" in IST
+  daysOfWeek      Json      @default("[]") @map("days_of_week")    // [0-6] for weekly
+  dayOfMonth      Int?      @map("day_of_month")                   // 1-31 for monthly
+  startDate       DateTime? @map("start_date") @db.Timestamptz
+  endDate         DateTime? @map("end_date") @db.Timestamptz
+  nextRunAt       DateTime? @map("next_run_at") @db.Timestamptz
+  lastRunAt       DateTime? @map("last_run_at") @db.Timestamptz
+  runCount        Int       @default(0) @map("run_count")
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("scheduled_campaigns")
+}
+
+model Script {
+  id          Int      @id @default(autoincrement())
+  scriptId    String   @unique @default(uuid()) @map("script_id") @db.Uuid
+  name        String   @db.VarChar(255)
+  description String?  @db.Text
+  content     String   @db.Text
+  agentId     String?  @map("agent_id") @db.VarChar(255)
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("scripts")
+}

@@ -1,0 +1,20 @@
+node_modules/
+.env
+.env.local
+.env.*.local
+.env.production
+.env.uat
+dist/
+build/
+*.log
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+exports/
+*.db
+.claude/settings.local.json
+
+# local tooling
+.claude/

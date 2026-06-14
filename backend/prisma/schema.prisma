@@ -166,6 +166,26 @@ model Enquiry {
   @@map("enquiries")
 }
 
+model DemoSession {
+  id            Int       @id @default(autoincrement())
+  token         String    @unique @default(uuid()) @db.Uuid
+  channel       String    @default("email") @db.VarChar(10) // email | mobile
+  contact       String    @db.VarChar(255)                  // verified email/phone
+  otpCode       String?   @map("otp_code") @db.VarChar(6)
+  otpExpiresAt  DateTime? @map("otp_expires_at") @db.Timestamptz
+  attempts      Int       @default(0)
+  verified      Boolean   @default(false)
+  verifiedAt    DateTime? @map("verified_at") @db.Timestamptz
+  linkExpiresAt DateTime? @map("link_expires_at") @db.Timestamptz // 24h demo link window
+  callsCount    Int       @default(0) @map("calls_count")
+  lastCallAt    DateTime? @map("last_call_at") @db.Timestamptz
+  lastPhone     String?   @map("last_phone") @db.VarChar(50)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("demo_sessions")
+}
+
 model Script {
   id          Int      @id @default(autoincrement())
   scriptId    String   @unique @default(uuid()) @map("script_id") @db.Uuid

@@ -19,6 +19,7 @@ import { ReportTemplatesModule } from './report-templates/report-templates.modul
 import { ScheduledCampaignsModule } from './scheduled-campaigns/scheduled-campaigns.module';
 import { AgentConfigsModule } from './agent-configs/agent-configs.module';
 import { EnquiriesModule } from './enquiries/enquiries.module';
+import { DemoModule } from './demo/demo.module';
 
 // Only serve React static files when production build exists
 const publicPath = join(__dirname, '..', 'public');
@@ -48,6 +49,7 @@ const staticModules = existsSync(publicPath)
     ScheduledCampaignsModule,
     AgentConfigsModule,
     EnquiriesModule,
+    DemoModule,
   ],
   controllers: [AppController],
 })

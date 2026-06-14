@@ -116,4 +116,10 @@ export const api = {
   createScheduledCampaign: (data) => request(`${BASE}/scheduled-campaigns`, { method: 'POST', body: JSON.stringify(data) }),
   updateScheduledCampaign: (id, data) => request(`${BASE}/scheduled-campaigns/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteScheduledCampaign: (id) => request(`${BASE}/scheduled-campaigns/${id}`, { method: 'DELETE' }),
+
+  // Enquiries (leads captured from the marketing website)
+  getEnquiries: (status) => request(`${BASE}/enquiries${status ? `?status=${status}` : ''}`),
+  getEnquiryStats: () => request(`${BASE}/enquiries/stats`),
+  updateEnquiry: (id, data) => request(`${BASE}/enquiries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteEnquiry: (id) => request(`${BASE}/enquiries/${id}`, { method: 'DELETE' }),
 };

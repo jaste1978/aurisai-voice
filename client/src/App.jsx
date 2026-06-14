@@ -13,6 +13,7 @@ import { Logs } from "./pages/Logs"
 import { ScriptBuilder } from "./pages/ScriptBuilder"
 import { AgentSettings } from "./pages/AgentSettings"
 import { ReportTemplates } from "./pages/ReportTemplates"
+import { Enquiries } from "./pages/Enquiries"
 
 function AppContent() {
   const { user, loading, hasPermission } = useAuth()
@@ -43,6 +44,7 @@ function AppContent() {
     scripts: <ScriptBuilder />,
     agents: <AgentSettings />,
     reports: <ReportTemplates />,
+    enquiries: <Enquiries />,
   }
 
   return (

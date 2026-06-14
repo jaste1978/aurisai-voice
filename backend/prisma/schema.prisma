@@ -148,6 +148,24 @@ model ScheduledCampaign {
   @@map("scheduled_campaigns")
 }
 
+model Enquiry {
+  id        Int      @id @default(autoincrement())
+  enquiryId String   @unique @default(uuid()) @map("enquiry_id") @db.Uuid
+  name      String   @db.VarChar(255)
+  company   String?  @db.VarChar(255)
+  email     String   @db.VarChar(255)
+  phone     String?  @db.VarChar(50)
+  interest  String?  @db.VarChar(255)
+  message   String   @db.Text
+  source    String   @default("website") @db.VarChar(50)
+  status    String   @default("new") @db.VarChar(20) // new | contacted | qualified | closed
+  notes     String?  @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("enquiries")
+}
+
 model Script {
   id          Int      @id @default(autoincrement())
   scriptId    String   @unique @default(uuid()) @map("script_id") @db.Uuid

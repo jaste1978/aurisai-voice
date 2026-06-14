@@ -18,6 +18,7 @@ import { ScriptsModule } from './scripts/scripts.module';
 import { ReportTemplatesModule } from './report-templates/report-templates.module';
 import { ScheduledCampaignsModule } from './scheduled-campaigns/scheduled-campaigns.module';
 import { AgentConfigsModule } from './agent-configs/agent-configs.module';
+import { EnquiriesModule } from './enquiries/enquiries.module';
 
 // Only serve React static files when production build exists
 const publicPath = join(__dirname, '..', 'public');
@@ -46,6 +47,7 @@ const staticModules = existsSync(publicPath)
     ReportTemplatesModule,
     ScheduledCampaignsModule,
     AgentConfigsModule,
+    EnquiriesModule,
   ],
   controllers: [AppController],
 })

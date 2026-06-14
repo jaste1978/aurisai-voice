@@ -1,4 +1,4 @@
-import { Phone, Users, BarChart3, Upload, PhoneCall, LogOut, Shield, ChevronDown, ScrollText, Wand2, Bot, Ticket, FileDown, Settings } from "lucide-react"
+import { Phone, Users, BarChart3, Upload, PhoneCall, LogOut, Shield, ChevronDown, ScrollText, Wand2, Bot, Ticket, FileDown, Settings, Inbox } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/AuthContext"
 import { useState, useRef, useEffect } from "react"
@@ -21,6 +21,7 @@ export function Layout({ activeTab, onTabChange, children }) {
   ].filter(t => t.perm())
 
   const adminTabs = [
+    { id: "enquiries", label: "Enquiries",      icon: Inbox },
     { id: "users",   label: "Users",            icon: Shield },
     { id: "logs",    label: "Logs",             icon: ScrollText },
     { id: "scripts", label: "Script Builder",   icon: Wand2 },

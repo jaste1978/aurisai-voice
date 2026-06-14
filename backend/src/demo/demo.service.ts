@@ -15,6 +15,7 @@ export class DemoService {
 
   private now() { return new Date(); }
   private code() { return String(Math.floor(100000 + Math.random() * 900000)); }
+  private isUuid(t: string) { return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t || ''); }
 
   async sendOtp(data: any) {
     const email = (data.email || '').trim().toLowerCase();
@@ -82,7 +83,7 @@ export class DemoService {
 
   // validate a demo link/token (used by the demo page on load)
   async session(token: string) {
-    const s = token ? await this.prisma.demoSession.findUnique({ where: { token } }) : null;
+    const s = this.isUuid(token) ? await this.prisma.demoSession.findUnique({ where: { token } }) : null;
     if (!s || !s.verified || !s.linkExpiresAt) {
       return { success: true, valid: false, reason: 'invalid' };
     }
@@ -104,7 +105,7 @@ export class DemoService {
     if (!/^\+\d{10,15}$/.test(phone)) {
       throw new BadRequestException('Please enter a valid phone number with country code.');
     }
-    const s = token ? await this.prisma.demoSession.findUnique({ where: { token } }) : null;
+    const s = this.isUuid(token) ? await this.prisma.demoSession.findUnique({ where: { token } }) : null;
     if (!s || !s.verified || !s.linkExpiresAt) throw new BadRequestException('Invalid demo link. Please verify again.');
     if (s.linkExpiresAt < this.now()) throw new BadRequestException('This demo link has expired. Please verify again.');
     if (s.callsCount >= MAX_CALLS_PER_LINK) throw new BadRequestException('You have used all demo calls for this link.');

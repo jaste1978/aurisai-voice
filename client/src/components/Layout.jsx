@@ -21,7 +21,7 @@ export function Layout({ activeTab, onTabChange, children }) {
   ].filter(t => t.perm())
 
   const adminTabs = [
-    { id: "enquiries", label: "Enquiries",      icon: Inbox },
+    { id: "enquiries", label: "Leads / CRM",    icon: Inbox },
     { id: "users",   label: "Users",            icon: Shield },
     { id: "logs",    label: "Logs",             icon: ScrollText },
     { id: "scripts", label: "Script Builder",   icon: Wand2 },

@@ -14,33 +14,49 @@ export class EnquiriesService {
   }
 
   async stats() {
-    const [total, neu, contacted, qualified, closed] = await Promise.all([
+    const STAGES = ['new', 'contacted', 'demo', 'pilot', 'won', 'lost'];
+    const counts = await Promise.all([
       this.prisma.enquiry.count(),
-      this.prisma.enquiry.count({ where: { status: 'new' } }),
-      this.prisma.enquiry.count({ where: { status: 'contacted' } }),
-      this.prisma.enquiry.count({ where: { status: 'qualified' } }),
-      this.prisma.enquiry.count({ where: { status: 'closed' } }),
+      ...STAGES.map((s) => this.prisma.enquiry.count({ where: { status: s } })),
     ]);
-    return { total, new: neu, contacted, qualified, closed };
+    const out: any = { total: counts[0] };
+    STAGES.forEach((s, i) => { out[s] = counts[i + 1]; });
+    return out;
   }
 
   async create(data: any) {
     const name = (data.name || '').trim();
+    const company = (data.company || '').trim();
     const email = (data.email || '').trim();
     const message = (data.message || '').trim();
-    if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) {
-      throw new BadRequestException('Name, a valid email, and a message are required.');
+    const source = (data.source || 'website').trim();
+
+    if (source === 'website') {
+      // public website form — keep strict validation
+      if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) {
+        throw new BadRequestException('Name, a valid email, and a message are required.');
+      }
+    } else {
+      // manually added lead (CRM) — only need a name or company; rest optional
+      if (!name && !company) {
+        throw new BadRequestException('Please enter at least a name or company.');
+      }
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new BadRequestException('That email looks invalid.');
+      }
     }
+
     const e = await this.prisma.enquiry.create({
       data: {
-        name,
-        company: (data.company || '').trim() || null,
-        email,
+        name: name || company,            // never empty
+        company: company || null,
+        email: email || '',               // column is NOT NULL
         phone: (data.phone || '').trim() || null,
         interest: (data.interest || '').trim() || null,
-        message,
-        source: (data.source || 'website').trim(),
-        status: 'new',
+        message: message || '',           // column is NOT NULL
+        source,
+        status: (data.status || 'new').trim(),
+        notes: (data.notes || '').trim() || null,
       },
     });
     return { success: true, data: this.serialize(e) };

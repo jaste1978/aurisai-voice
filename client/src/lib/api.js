@@ -121,6 +121,7 @@ export const api = {
   // Enquiries (leads captured from the marketing website)
   getEnquiries: (status) => request(`${BASE}/enquiries${status ? `?status=${status}` : ''}`),
   getEnquiryStats: () => request(`${BASE}/enquiries/stats`),
+  createEnquiry: (data) => request(`${BASE}/enquiries`, { method: 'POST', body: JSON.stringify(data) }),
   updateEnquiry: (id, data) => request(`${BASE}/enquiries/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteEnquiry: (id) => request(`${BASE}/enquiries/${id}`, { method: 'DELETE' }),
 };

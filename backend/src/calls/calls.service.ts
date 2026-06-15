@@ -47,6 +47,52 @@ export class CallsService {
     return this.serialize(call);
   }
 
+  // Pull every execution from Bolna (across all agents) into the calls table,
+  // so calls placed outside the app (website demo, API, etc.) also show up.
+  async importFromBolna() {
+    const agentsRes = await this.bolna.getAgents();
+    const agents = Array.isArray(agentsRes) ? agentsRes : (agentsRes.agents || agentsRes.data || []);
+    let imported = 0, updated = 0;
+
+    for (const a of agents) {
+      const agentId = a.id;
+      const agentName = a.agent_name || a.name || null;
+      let execs: any[] = [];
+      try { execs = await this.bolna.getAgentExecutions(agentId, 200); } catch { continue; }
+
+      for (const e of execs) {
+        const execId = e.id;
+        if (!execId) continue;
+        const phone = e.telephony_data?.to_number || e.user_number || e.recipient_phone_number || null;
+        const data: any = {
+          bolnaExecutionId: execId,
+          phoneNumber: phone,
+          status: STATUS_MAP[e.status] || e.status || 'completed',
+          agentId,
+          agentName,
+          duration: Math.round(e.conversation_duration || 0),
+          transcript: e.transcript || '',
+          bolnaResponse: e,
+          ...(e.telephony_data?.recording_url && { recordingUrl: e.telephony_data.recording_url }),
+          ...(e.summary && { agentResponseOutcome: e.summary }),
+        };
+        const existing = await this.prisma.call.findFirst({ where: { bolnaExecutionId: execId } });
+        if (existing) {
+          await this.prisma.call.update({ where: { id: existing.id }, data });
+          updated++;
+        } else {
+          await this.prisma.call.create({ data: { ...data, ...(e.created_at && { createdAt: new Date(e.created_at) }) } });
+          imported++;
+        }
+      }
+    }
+    return {
+      success: true,
+      message: `Imported ${imported} new and updated ${updated} calls from Bolna.`,
+      data: { synced: imported + updated, imported, updated, failed: 0 },
+    };
+  }
+
   async getStats() {
     const [total, completed, failed, inProgress, transferred] = await Promise.all([
       this.prisma.call.count(),

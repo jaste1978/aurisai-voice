@@ -127,6 +127,19 @@ export class DemoService {
       data: { callsCount: { increment: 1 }, lastCallAt: this.now(), lastPhone: phone },
     });
 
+    // record it in the calls table so it shows in the admin & gets poller updates
+    const execId = res?.execution_id || res?.run_id || null;
+    await this.prisma.call.create({
+      data: {
+        phoneNumber: phone,
+        status: 'in_progress',
+        agentId,
+        agentName: 'Website Demo',
+        callStartTime: this.now(),
+        ...(execId && { bolnaExecutionId: execId }),
+      },
+    }).catch(() => {});
+
     return {
       success: true,
       message: 'Call placed! Your phone will ring shortly.',

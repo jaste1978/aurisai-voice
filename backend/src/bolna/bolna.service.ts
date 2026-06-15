@@ -46,6 +46,12 @@ export class BolnaService {
     return res.data;
   }
 
+  async getAgentExecutions(agentId: string, pageSize = 200) {
+    const res = await this.api.get(`/agent/${agentId}/executions`, { params: { page_size: pageSize } });
+    const d = res.data;
+    return Array.isArray(d) ? d : (d.data || d.executions || d.results || []);
+  }
+
   async getBatch(batchId: string) {
     const res = await this.api.get(`/batches/${batchId}`);
     return res.data;

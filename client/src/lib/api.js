@@ -54,12 +54,13 @@ export const api = {
   // Calls
   getCalls: () => request(`${BASE}/calls`),
   getCallStats: () => request(`${BASE}/calls/stats`),
+  importCalls: () => request(`${BASE}/calls/import`, { method: 'POST' }),
   getSupportTickets: (params = {}) => request(`${BASE}/calls/support-tickets?${new URLSearchParams(params).toString()}`),
   triggerCall: (data) => request(`${BASE}/calls/trigger`, { method: 'POST', body: JSON.stringify(data) }),
   syncCall: (id) => request(`${BASE}/calls/${id}/sync`, { method: 'POST' }),
   analyzeCall: (id) => request(`${BASE}/calls/${id}/analyze`, { method: 'POST' }),
   bulkSyncRecordings: () => request(`${BASE}/calls/bulk-sync-recordings`, { method: 'POST' }),
-  syncAllFromBolna: () => request(`${BASE}/calls/bulk-sync-recordings`, { method: 'POST' }),
+  syncAllFromBolna: () => request(`${BASE}/calls/import`, { method: 'POST' }),
 
   // Agents
   getAgents: () => request(`${BASE}/agents`),

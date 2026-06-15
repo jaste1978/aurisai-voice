@@ -42,6 +42,11 @@ export class CallsController {
     res.redirect(302, call.recording_url);
   }
 
+  @Post('import')
+  async importFromBolna() {
+    return this.callsService.importFromBolna();
+  }
+
   @Post()
   async trigger(@Body() body: any) {
     return this.callsService.trigger(body);

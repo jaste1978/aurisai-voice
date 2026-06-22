@@ -81,6 +81,26 @@ export class DemoService {
     };
   }
 
+  // Verify an email OTP without issuing a demo link — reused by trial signup.
+  // Throws BadRequestException on failure; returns true on success.
+  async checkOtp(email: string, otp: string): Promise<boolean> {
+    email = (email || '').trim().toLowerCase();
+    otp = (otp || '').trim();
+    const session = await this.prisma.demoSession.findFirst({
+      where: { contact: email, verified: false },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!session || !session.otpCode || !session.otpExpiresAt) throw new BadRequestException('Please request an OTP first.');
+    if (session.attempts >= MAX_VERIFY_ATTEMPTS) throw new BadRequestException('Too many attempts. Please request a new code.');
+    if (session.otpExpiresAt < this.now()) throw new BadRequestException('This code has expired. Please request a new one.');
+    if (session.otpCode !== otp) {
+      await this.prisma.demoSession.update({ where: { id: session.id }, data: { attempts: { increment: 1 } } });
+      throw new BadRequestException('Incorrect code. Please try again.');
+    }
+    await this.prisma.demoSession.update({ where: { id: session.id }, data: { verified: true, verifiedAt: this.now(), otpCode: null } });
+    return true;
+  }
+
   // validate a demo link/token (used by the demo page on load)
   async session(token: string) {
     const s = this.isUuid(token) ? await this.prisma.demoSession.findUnique({ where: { token } }) : null;

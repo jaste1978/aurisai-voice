@@ -5,9 +5,11 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { DemoModule } from '../demo/demo.module';
 
 @Module({
   imports: [
+    DemoModule,
     PassportModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'aurisai-jwt-secret',

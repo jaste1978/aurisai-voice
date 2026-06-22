@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, ParseIntPipe, Res, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards, ParseIntPipe, Res, Request, HttpException, HttpStatus } from '@nestjs/common';
 import { CallsService } from './calls.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import type { Response } from 'express';
+import type { Response, Request as ExpressRequest } from 'express';
 
 @Controller('calls')
 @UseGuards(JwtAuthGuard)
@@ -48,13 +48,13 @@ export class CallsController {
   }
 
   @Post()
-  async trigger(@Body() body: any) {
-    return this.callsService.trigger(body);
+  async trigger(@Request() req: ExpressRequest & { user: any }, @Body() body: any) {
+    return this.callsService.trigger(body, req.user);
   }
 
   // Also accept /trigger route (camelCase fields from frontend)
   @Post('trigger')
-  async triggerAlt(@Body() body: any) {
+  async triggerAlt(@Request() req: ExpressRequest & { user: any }, @Body() body: any) {
     // Normalize camelCase → snake_case so the service handles both
     const normalized = {
       customer_id: body.customerId ?? body.customer_id,
@@ -63,7 +63,7 @@ export class CallsController {
       language: body.language,
       purpose: body.purpose,
     };
-    return this.callsService.trigger(normalized);
+    return this.callsService.trigger(normalized, req.user);
   }
 
   @Post(':id/sync')

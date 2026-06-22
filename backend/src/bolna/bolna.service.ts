@@ -52,6 +52,16 @@ export class BolnaService {
     return Array.isArray(d) ? d : (d.data || d.executions || d.results || []);
   }
 
+  async createAgent(payload: any) {
+    const res = await this.api.post('/v2/agent', payload);
+    return res.data; // { agent_id, state }
+  }
+
+  async deleteAgent(agentId: string) {
+    const res = await this.api.delete(`/v2/agent/${agentId}`);
+    return res.data;
+  }
+
   async getBatch(batchId: string) {
     const res = await this.api.get(`/batches/${batchId}`);
     return res.data;

@@ -13,6 +13,7 @@ export function Layout({ activeTab, onTabChange, children }) {
 
   const mainTabs = [
     { id: "dashboard", label: "Dashboard",     icon: BarChart3, perm: () => hasPermission('dashboard') },
+    { id: "myagents",  label: "My Agents",     icon: Bot,       perm: () => hasPermission('agents', 'view') },
     { id: "customers", label: "Customers",     icon: Users,     perm: () => hasPermission('customers', 'view') },
     { id: "calls",     label: "Calls",         icon: Phone,     perm: () => hasPermission('calls', 'view') },
     { id: "tickets",   label: "Support Tickets", icon: Ticket,  perm: () => hasPermission('calls', 'view') },

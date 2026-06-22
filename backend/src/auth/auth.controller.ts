@@ -13,6 +13,19 @@ export class AuthController {
     return this.authService.login(body.email, body.password);
   }
 
+  // Public trial signup (email OTP)
+  @Post('signup/start')
+  @HttpCode(200)
+  async signupStart(@Body() body: { email: string }) {
+    return this.authService.signupStart(body.email);
+  }
+
+  @Post('signup/verify')
+  @HttpCode(200)
+  async signupVerify(@Body() body: any) {
+    return this.authService.signupVerify(body);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@Request() req: ExpressRequest & { user: any }) {

@@ -88,10 +88,25 @@ model User {
   permissions  Json     @default("{\"dashboard\":true,\"customers\":{\"view\":true,\"manage\":false},\"calls\":{\"view\":true,\"trigger\":false},\"bulk\":{\"view\":false,\"manage\":false}}")
   isActive     Boolean  @default(true) @map("is_active")
   createdBy    Int?     @map("created_by")
+  isTrial      Boolean  @default(false) @map("is_trial")
+  trialEndsAt  DateTime? @map("trial_ends_at") @db.Timestamptz
+  agentLimit   Int      @default(2) @map("agent_limit")
+  callLimit    Int      @default(20) @map("call_limit")
+  callsUsed    Int      @default(0) @map("calls_used")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   @@map("users")
+}
+
+model OwnedAgent {
+  id        Int      @id @default(autoincrement())
+  agentId   String   @unique @map("agent_id") @db.VarChar(255)
+  userId    Int      @map("user_id")
+  name      String?  @db.VarChar(255)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("owned_agents")
 }
 
 model ReportTemplate {

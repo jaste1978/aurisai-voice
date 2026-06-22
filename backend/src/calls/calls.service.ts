@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { BolnaService } from '../bolna/bolna.service';
 import OpenAI from 'openai';
@@ -113,9 +113,25 @@ export class CallsService {
     };
   }
 
-  async trigger(data: any) {
+  async trigger(data: any, user?: any) {
     const { customer_id, agent_id, phone_number, language } = data;
     if (!agent_id || !phone_number) throw new BadRequestException('agent_id and phone_number are required');
+
+    // Trial guardrails: own-agent only + 14-day window + call cap
+    if (user?.isTrial) {
+      if (user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
+        throw new BadRequestException('Your 14-day trial has ended. Upgrade to keep calling.');
+      }
+      const owned = await this.prisma.ownedAgent.findUnique({ where: { agentId: agent_id } });
+      if (!owned || owned.userId !== user.id) {
+        throw new ForbiddenException('You can only place calls with your own agents.');
+      }
+      const fresh = await this.prisma.user.findUnique({ where: { id: user.id } });
+      if ((fresh?.callsUsed ?? 0) >= (fresh?.callLimit ?? 20)) {
+        throw new BadRequestException(`Trial call limit reached (${fresh?.callLimit ?? 20} calls). Upgrade for unlimited calling.`);
+      }
+      await this.prisma.user.update({ where: { id: user.id }, data: { callsUsed: { increment: 1 } } });
+    }
 
     let customer = null;
     if (customer_id) {

@@ -36,6 +36,8 @@ function requestForm(url, formData) {
 export const api = {
   // Auth
   login: (data) => request(`${BASE}/auth/login`, { method: 'POST', body: JSON.stringify(data) }),
+  signupStart: (email) => request(`${BASE}/auth/signup/start`, { method: 'POST', body: JSON.stringify({ email }) }),
+  signupVerify: (data) => request(`${BASE}/auth/signup/verify`, { method: 'POST', body: JSON.stringify(data) }),
   me: () => request(`${BASE}/auth/me`),
   changePassword: (data) => request(`${BASE}/auth/change-password`, { method: 'POST', body: JSON.stringify(data) }),
 
@@ -64,6 +66,8 @@ export const api = {
 
   // Agents
   getAgents: () => request(`${BASE}/agents`),
+  createAgent: (data) => request(`${BASE}/agents`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteAgent: (agentId) => request(`${BASE}/agents/${agentId}`, { method: 'DELETE' }),
 
   // Agent Configs (Freshdesk etc.)
   getAgentConfig: (agentId) => request(`${BASE}/agent-configs/${agentId}`),

@@ -29,6 +29,19 @@ export function AuthProvider({ children }) {
     return res
   }
 
+  // Used by trial signup once the verify step returns a token + user
+  const completeAuth = (token, u) => {
+    localStorage.setItem('token', token)
+    setUser(u)
+  }
+
+  // Refresh the current user (e.g. after creating an agent / placing a call)
+  const refreshUser = async () => {
+    const r = await api.me()
+    if (r.success) setUser(r.user)
+    return r
+  }
+
   const logout = () => {
     localStorage.removeItem('token')
     setUser(null)
@@ -44,7 +57,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission, completeAuth, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

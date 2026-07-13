@@ -36,6 +36,13 @@ export class EnquiriesService {
       if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !message) {
         throw new BadRequestException('Name, a valid email, and a message are required.');
       }
+      // simple "what is X + Y?" human check
+      const a = Number(data.captcha_a);
+      const b = Number(data.captcha_b);
+      const answer = Number(data.captcha_answer);
+      if (!Number.isInteger(a) || !Number.isInteger(b) || answer !== a + b) {
+        throw new BadRequestException('Captcha check failed. Please answer the sum correctly.');
+      }
     } else {
       // manually added lead (CRM) — only need a name or company; rest optional
       if (!name && !company) {

@@ -17,24 +17,30 @@ export class MonitoringService {
   ) {}
 
   // Returns a list of problem signals for a finished call ([] means healthy).
+  // NOTE: Bolna's `conversation_duration` is unreliable (often 0 even on a real
+  // conversation), so health is judged by whether a conversation actually
+  // happened — LLM turns and/or the user speaking — not by raw duration.
   evaluateCall(call: any): string[] {
     const issues: string[] = [];
     const resp: any = call?.bolnaResponse || {};
     const status = call?.status;
-    const bolnaStatus = resp.status;
-    const dur = call?.duration ?? 0;
     const tta = resp?.latency_data?.time_to_first_audio;
     const llmTurns = resp?.latency_data?.llm?.turns;
-    const transcriptLen = (call?.transcript || '').length;
+    const llmTurnCount = Array.isArray(llmTurns) ? llmTurns.length : null;
+    const transcript = call?.transcript || '';
+    const userSpoke = /(^|\n)\s*user:/i.test(transcript);
+    const hadConversation = (llmTurnCount != null && llmTurnCount > 0) || userSpoke;
 
     if (status === 'failed') issues.push('Call failed');
-    if (status === 'completed' && dur === 0) issues.push('Zero-duration call (dropped immediately)');
-    if (bolnaStatus === 'call-disconnected' && dur === 0) issues.push('Disconnected before the conversation ran');
-    if (Array.isArray(llmTurns) && llmTurns.length === 0 && transcriptLen > 0) {
-      issues.push('Agent greeted but the LLM produced no reply turns');
-    }
-    if (typeof tta === 'number' && tta > 8) issues.push(`Slow first audio (${tta.toFixed(1)}s)`);
     if (call?.errorMessage) issues.push(`Error: ${String(call.errorMessage).slice(0, 120)}`);
+    if (!hadConversation) {
+      if (transcript && llmTurnCount === 0) {
+        issues.push('Agent greeted but the conversation never started (no LLM turns)');
+      } else {
+        issues.push('No conversation — call dropped before the agent engaged');
+      }
+    }
+    if (typeof tta === 'number' && tta > 10) issues.push(`Slow first audio (${tta.toFixed(1)}s)`);
     return issues;
   }
 
@@ -63,12 +69,14 @@ export class MonitoringService {
     try {
       const since = new Date(Date.now() - 3600 * 1000);
       const scope = { createdAt: { gte: since } };
-      const [total, completed, failed, zeroDur, agg, newUsers] = await Promise.all([
+      const terminal = ['completed', 'failed', 'transferred'];
+      const [total, completed, failed, noConvo, newUsers] = await Promise.all([
         this.prisma.call.count({ where: { ...scope } }),
         this.prisma.call.count({ where: { ...scope, status: 'completed' } }),
         this.prisma.call.count({ where: { ...scope, status: 'failed' } }),
-        this.prisma.call.count({ where: { ...scope, status: 'completed', duration: 0 } }),
-        this.prisma.call.aggregate({ where: { ...scope, status: 'completed' }, _avg: { duration: true } }),
+        // Genuinely broken: finished but the user never spoke (call.duration is
+        // unreliable on Bolna, so we go by the transcript instead).
+        this.prisma.call.count({ where: { ...scope, status: { in: terminal }, NOT: { transcript: { contains: 'user:' } } } }),
         this.prisma.user.count({ where: { ...scope } }),
       ]);
 
@@ -80,17 +88,14 @@ export class MonitoringService {
         /* wallet is best-effort */
       }
 
-      const avg = Math.round(agg._avg.duration || 0);
-      const problems = failed + zeroDur;
-      const health = total === 0 ? '😴 no calls' : problems === 0 ? '✅ healthy' : `⚠️ ${problems} problem call(s)`;
+      const health = total === 0 ? '😴 no calls' : noConvo === 0 && failed === 0 ? '✅ healthy' : `⚠️ ${noConvo} no-conversation, ${failed} failed`;
       const now = new Date().toISOString().slice(0, 16).replace('T', ' ');
 
       const msg =
         `📊 <b>AurisAI hourly report</b>\n` +
         `<i>${now} UTC · last 60 min</i>\n\n` +
         `Calls: <b>${total}</b> (✅ ${completed} · ❌ ${failed})\n` +
-        `Zero-duration: <b>${zeroDur}</b>\n` +
-        `Avg duration: <b>${avg}s</b>\n` +
+        `No-conversation: <b>${noConvo}</b>\n` +
         `New signups: <b>${newUsers}</b>\n` +
         `Bolna wallet: <b>${wallet}</b>\n` +
         `Health: ${health}`;

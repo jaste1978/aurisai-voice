@@ -67,7 +67,7 @@ export class AgentsService {
     const langWord = language === 'english' ? 'English' : language === 'hindi' ? 'Hindi' : 'Hinglish (a natural Hindi + English mix)';
     const transcriberLang = language === 'english' ? 'en' : 'hi';
 
-    const guardrail = `\n\n== LANGUAGE GUARDRAIL (STRICT) ==\n- You ONLY speak in ${langWord}. Never switch to any other language.\n- If the transcript ever shows another language/script (Kannada, Tamil, Telugu, Punjabi, Bengali, etc.), treat it as a mishear — do NOT reply in that language. Politely ask the caller to repeat, in ${langWord}.\n- Never output non-Hindi/English script.`;
+    const guardrail = `\n\n== LANGUAGE GUARDRAIL ==\n- Speak naturally in ${langWord}. Hindi and English are BOTH welcome — never ask the caller to repeat just because they spoke Hindi or English.\n- Understand whatever the caller says in Hindi or English and respond helpfully; keep the conversation flowing.\n- Only if the caller clearly uses a completely different regional language (Tamil, Telugu, Kannada, Bengali, etc.) should you gently continue in ${langWord} yourself — do NOT demand they switch or repeat.`;
 
     const systemPrompt =
       (prompt || `You are ${name}, a helpful AI voice agent. Be warm, concise and natural.`) + guardrail;

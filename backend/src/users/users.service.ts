@@ -97,9 +97,11 @@ export class UsersService {
       user_id: user.userId,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       permissions: user.permissions,
       is_active: user.isActive,
+      is_trial: user.isTrial,
       created_at: user.createdAt,
       updated_at: user.updatedAt,
     };

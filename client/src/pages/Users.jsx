@@ -140,6 +140,7 @@ export function Users() {
               <tr className="bg-[#18120E] text-white">
                 <th className="px-4 py-3 text-left">Name</th>
                 <th className="px-4 py-3 text-left">Email</th>
+                <th className="px-4 py-3 text-left">Phone</th>
                 <th className="px-4 py-3 text-left">Role</th>
                 <th className="px-4 py-3 text-left">Status</th>
                 <th className="px-4 py-3 text-left">Module Access</th>
@@ -159,6 +160,7 @@ export function Users() {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">{u.email}</td>
+                  <td className="px-4 py-3 text-gray-500">{u.phone || '—'}</td>
                   <td className="px-4 py-3">
                     <Badge className={u.role === 'admin' ? 'bg-[#FF7A50] text-white' : 'bg-gray-100 text-gray-700'}>
                       {u.role}

@@ -55,6 +55,11 @@ model Call {
   bolnaResponse        Json?     @map("bolna_response")
   behavioralInsights   String?   @map("behavioral_insights")
   extractedData        Json?     @map("extracted_data")
+  source               String?   @db.VarChar(20)            // 'api' when placed via the public API
+  apiKeyId             Int?      @map("api_key_id")          // which API key placed it
+  partnerWebhookUrl    String?   @map("partner_webhook_url") @db.VarChar(500)
+  partnerNotifiedAt    DateTime? @map("partner_notified_at") @db.Timestamptz
+  metadata             Json?                                 // caller-supplied passthrough metadata
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
@@ -100,8 +105,28 @@ model User {
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   calls        Call[]
+  apiKeys      ApiKey[]
 
   @@map("users")
+}
+
+model ApiKey {
+  id         Int       @id @default(autoincrement())
+  keyId      String    @unique @default(uuid()) @map("key_id") @db.Uuid
+  name       String?   @db.VarChar(255)                      // human label for the key
+  keyHash    String    @unique @map("key_hash") @db.VarChar(255)   // sha256 of the secret
+  keyPrefix  String    @map("key_prefix") @db.VarChar(24)          // shown in UI, e.g. sk_live_ab12cd
+  userId     Int       @map("user_id")                       // account the key acts as
+  user       User      @relation(fields: [userId], references: [id])
+  active     Boolean   @default(true)
+  callsMade  Int       @default(0) @map("calls_made")
+  lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz
+  createdBy  Int?      @map("created_by")
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([userId])
+  @@map("api_keys")
 }
 
 model OwnedAgent {

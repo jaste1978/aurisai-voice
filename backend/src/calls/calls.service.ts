@@ -148,7 +148,11 @@ export class CallsService {
     };
   }
 
-  async trigger(data: any, user?: any) {
+  async trigger(
+    data: any,
+    user?: any,
+    opts: { source?: string; apiKeyId?: number; partnerWebhookUrl?: string; metadata?: any } = {},
+  ) {
     const { customer_id, agent_id, phone_number, language } = data;
     if (!agent_id || !phone_number) throw new BadRequestException('agent_id and phone_number are required');
 
@@ -187,6 +191,10 @@ export class CallsService {
         language: language || 'en',
         ...(ownerId && { userId: ownerId }),
         ...(customer && { customerId: customer.id }),
+        ...(opts.source && { source: opts.source }),
+        ...(opts.apiKeyId && { apiKeyId: opts.apiKeyId }),
+        ...(opts.partnerWebhookUrl && { partnerWebhookUrl: opts.partnerWebhookUrl }),
+        ...(opts.metadata !== undefined && { metadata: opts.metadata }),
       },
     });
 

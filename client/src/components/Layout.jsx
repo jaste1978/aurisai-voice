@@ -1,4 +1,4 @@
-import { Phone, Users, BarChart3, Upload, PhoneCall, LogOut, Shield, ChevronDown, ScrollText, Wand2, Bot, Ticket, FileDown, Settings, Inbox } from "lucide-react"
+import { Phone, Users, BarChart3, Upload, PhoneCall, LogOut, Shield, ChevronDown, ScrollText, Wand2, Bot, Ticket, FileDown, Settings, Inbox, KeyRound } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/AuthContext"
 import { useState, useRef, useEffect } from "react"
@@ -28,6 +28,7 @@ export function Layout({ activeTab, onTabChange, children }) {
     { id: "scripts", label: "Script Builder",   icon: Wand2 },
     { id: "agents",  label: "Agent Config",     icon: Bot },
     { id: "reports", label: "Report Templates", icon: FileDown },
+    { id: "apikeys", label: "API Keys",         icon: KeyRound },
   ]
 
   const activeAdminTab = adminTabs.find(t => t.id === activeTab)

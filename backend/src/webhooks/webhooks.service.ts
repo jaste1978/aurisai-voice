@@ -40,6 +40,40 @@ export class WebhooksService {
     // Fire-and-forget health check → instant Telegram alert if the call looks broken.
     this.monitoring.alertOnCall(updated).catch(() => {});
 
+    // Fire-and-forget partner webhook delivery for API-placed calls.
+    this.notifyPartner(updated).catch(() => {});
+
     return { received: true };
+  }
+
+  // POST the outcome to the caller's webhook_url once, when the call is terminal.
+  private async notifyPartner(call: any) {
+    const terminal = ['completed', 'failed', 'transferred'];
+    if (!call?.partnerWebhookUrl || call.partnerNotifiedAt || !terminal.includes(call.status)) return;
+    const payload = {
+      event: 'call.completed',
+      call: {
+        id: call.id,
+        status: call.status,
+        agent_id: call.agentId,
+        agent_name: call.agentName,
+        phone_number: call.phoneNumber,
+        duration: call.duration,
+        summary: call.agentResponseOutcome || null,
+        transcript_available: !!(call.transcript && call.transcript.length),
+        recording_url: call.recordingUrl || null,
+        error: call.errorMessage || null,
+        metadata: call.metadata ?? null,
+        created_at: call.createdAt,
+      },
+    };
+    try {
+      await fetch(call.partnerWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch { /* delivery is best-effort */ }
+    await this.prisma.call.update({ where: { id: call.id }, data: { partnerNotifiedAt: new Date() } }).catch(() => {});
   }
 }

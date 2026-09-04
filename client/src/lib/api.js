@@ -42,6 +42,11 @@ export const api = {
   changePassword: (data) => request(`${BASE}/auth/change-password`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Users (admin)
+  // API keys (admin)
+  getApiKeys: () => request(`${BASE}/api-keys`),
+  createApiKey: (data) => request(`${BASE}/api-keys`, { method: 'POST', body: JSON.stringify(data) }),
+  revokeApiKey: (id) => request(`${BASE}/api-keys/${id}`, { method: 'DELETE' }),
+
   getUsers: () => request(`${BASE}/users`),
   createUser: (data) => request(`${BASE}/users`, { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id, data) => request(`${BASE}/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

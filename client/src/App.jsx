@@ -15,6 +15,7 @@ import { AgentSettings } from "./pages/AgentSettings"
 import { ReportTemplates } from "./pages/ReportTemplates"
 import { Enquiries } from "./pages/Enquiries"
 import { MyAgents } from "./pages/MyAgents"
+import { ApiKeys } from "./pages/ApiKeys"
 
 function AppContent() {
   const { user, loading, hasPermission } = useAuth()
@@ -47,6 +48,7 @@ function AppContent() {
     reports: <ReportTemplates />,
     enquiries: <Enquiries />,
     myagents: <MyAgents />,
+    apikeys: <ApiKeys />,
   }
 
   return (

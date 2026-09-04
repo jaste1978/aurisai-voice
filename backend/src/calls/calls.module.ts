@@ -9,5 +9,6 @@ import { AgentConfigsModule } from '../agent-configs/agent-configs.module';
   imports: [BolnaModule, AgentConfigsModule],
   providers: [CallsService, CallPollerService],
   controllers: [CallsController],
+  exports: [CallsService],
 })
 export class CallsModule {}

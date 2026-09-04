@@ -3,13 +3,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Lock, Mail, User as UserIcon } from 'lucide-react'
+import { Lock, Mail, Phone, User as UserIcon } from 'lucide-react'
 
 export function Login() {
   const { login, completeAuth } = useAuth()
   const [mode, setMode] = useState('signin')      // signin | signup
   const [step, setStep] = useState('email')        // signup: email | verify
-  const [form, setForm] = useState({ email: '', password: '', name: '', otp: '' })
+  const [form, setForm] = useState({ email: '', password: '', name: '', phone: '', otp: '' })
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [loading, setLoading] = useState(false)
@@ -32,7 +32,7 @@ export function Login() {
 
   const finishSignup = async (e) => {
     e.preventDefault(); setError(''); setLoading(true)
-    const res = await api.signupVerify({ email: form.email, otp: form.otp, password: form.password, name: form.name })
+    const res = await api.signupVerify({ email: form.email, otp: form.otp, password: form.password, name: form.name, phone: form.phone })
     setLoading(false)
     if (res.success && res.token) completeAuth(res.token, res.user)   // logs in → trial dashboard
     else setError(res.error || 'Verification failed')
@@ -92,6 +92,7 @@ export function Login() {
               <form onSubmit={finishSignup} className="space-y-4">
                 <Field icon={Mail} label="6-digit code"><Input inputMode="numeric" maxLength={6} placeholder="••••••" value={form.otp} onChange={e => set('otp', e.target.value)} autoFocus /></Field>
                 <Field icon={UserIcon} label="Your name"><Input placeholder="Your name" value={form.name} onChange={e => set('name', e.target.value)} /></Field>
+                <Field icon={Phone} label="Mobile number"><Input type="tel" inputMode="tel" placeholder="+91 98765 43210" value={form.phone} onChange={e => set('phone', e.target.value)} /></Field>
                 <Field icon={Lock} label="Create a password"><Input type="password" placeholder="min 6 characters" value={form.password} onChange={e => set('password', e.target.value)} /></Field>
                 {error && <Err>{error}</Err>}
                 <Button type="submit" disabled={loading} className="w-full h-10 text-base">{loading ? 'Creating…' : 'Start trial'}</Button>

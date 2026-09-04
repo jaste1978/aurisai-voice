@@ -37,7 +37,9 @@ export class AuthService {
     const email = (data.email || '').trim().toLowerCase();
     const name = (data.name || '').trim() || email.split('@')[0];
     const password = data.password || '';
+    const phone = (data.phone || '').trim();
     if (password.length < 6) throw new BadRequestException('Password must be at least 6 characters.');
+    if (phone.replace(/\D/g, '').length < 8) throw new BadRequestException('Please enter a valid phone number (with country code).');
     if (await this.prisma.user.findUnique({ where: { email } })) {
       throw new BadRequestException('An account with this email already exists. Please log in.');
     }
@@ -48,6 +50,7 @@ export class AuthService {
       data: {
         name,
         email,
+        phone,
         passwordHash: hash,
         role: 'trial',
         isTrial: true,
@@ -63,6 +66,7 @@ export class AuthService {
       `🆕 <b>New signup</b>\n` +
       `Name: ${escapeHtml(user.name)}\n` +
       `Email: ${escapeHtml(user.email)}\n` +
+      `📞 Phone: ${escapeHtml(user.phone || '—')}\n` +
       `Plan: 3-day trial (ends ${user.trialEndsAt ? user.trialEndsAt.toISOString().slice(0, 10) : '—'})\n` +
       `Limits: ${user.callLimit} calls\n` +
       `Total users: ${await this.prisma.user.count().catch(() => '?')}`,
@@ -103,6 +107,7 @@ export class AuthService {
       user_id: user.userId,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       permissions: user.permissions,
       is_active: user.isActive,

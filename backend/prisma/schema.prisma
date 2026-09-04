@@ -86,6 +86,7 @@ model User {
   userId       String   @unique @default(uuid()) @map("user_id") @db.Uuid
   name         String   @db.VarChar(255)
   email        String   @unique @db.VarChar(255)
+  phone        String?  @db.VarChar(20)
   passwordHash String   @map("password_hash") @db.VarChar(255)
   role         String   @default("user") @db.VarChar(20)
   permissions  Json     @default("{\"dashboard\":true,\"customers\":{\"view\":true,\"manage\":false},\"calls\":{\"view\":true,\"trigger\":false},\"bulk\":{\"view\":false,\"manage\":false}}")

@@ -26,6 +26,12 @@ export class BolnaService {
     return res.data;
   }
 
+  // Account info for the current API key (email, wallet balance, etc.)
+  async getMe() {
+    const res = await this.api.get('/me');
+    return res.data;
+  }
+
   async triggerCall(phoneNumber: string, agentId: string, customerId: any, callData: any) {
     const res = await this.api.post('/call', {
       agent_id: agentId,

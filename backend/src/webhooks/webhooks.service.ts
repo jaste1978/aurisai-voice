@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MonitoringService } from '../monitoring/monitoring.service';
 
 const STATUS_MAP: Record<string, string> = {
   'call-disconnected': 'completed', 'no-answer': 'failed', 'busy': 'failed',
@@ -12,7 +13,7 @@ const STATUS_MAP: Record<string, string> = {
 
 @Injectable()
 export class WebhooksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private monitoring: MonitoringService) {}
 
   async processWebhook(payload: any) {
     const executionId = payload.execution_id || payload.id;
@@ -23,7 +24,7 @@ export class WebhooksService {
 
     // Webhook gives us an early status update — poller will do the full sync
     // (transcript, recording, Google Chat) once the terminal status is confirmed
-    await this.prisma.call.update({
+    const updated = await this.prisma.call.update({
       where: { id: call.id },
       data: {
         status: STATUS_MAP[payload.status] || payload.status || call.status,
@@ -35,6 +36,9 @@ export class WebhooksService {
         ...(payload.error?.message && { errorMessage: payload.error.message }),
       },
     });
+
+    // Fire-and-forget health check → instant Telegram alert if the call looks broken.
+    this.monitoring.alertOnCall(updated).catch(() => {});
 
     return { received: true };
   }

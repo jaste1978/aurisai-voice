@@ -42,6 +42,8 @@ export const api = {
   changePassword: (data) => request(`${BASE}/auth/change-password`, { method: 'POST', body: JSON.stringify(data) }),
 
   // Users (admin)
+  getHealth: () => request(`${BASE}/health`),
+
   // API keys (admin)
   getApiKeys: () => request(`${BASE}/api-keys`),
   createApiKey: (data) => request(`${BASE}/api-keys`, { method: 'POST', body: JSON.stringify(data) }),

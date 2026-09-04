@@ -1,12 +1,15 @@
 import { Phone, Users, BarChart3, Upload, PhoneCall, LogOut, Shield, ChevronDown, ScrollText, Wand2, Bot, Ticket, FileDown, Settings, Inbox, KeyRound } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/contexts/AuthContext"
+import { api } from "@/lib/api"
 import { useState, useRef, useEffect } from "react"
 
 export function Layout({ activeTab, onTabChange, children }) {
   const { user, logout, hasPermission } = useAuth()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [adminMenuOpen, setAdminMenuOpen] = useState(false)
+  const [build, setBuild] = useState(null)
+  useEffect(() => { api.getHealth().then(r => setBuild(r)).catch(() => {}) }, [])
   const adminRef = useRef(null)
 
   const isAdmin = user?.role === 'admin'
@@ -86,6 +89,7 @@ export function Layout({ activeTab, onTabChange, children }) {
                   <div className="px-4 py-3 border-b">
                     <p className="text-sm font-medium text-gray-800">{user.name}</p>
                     <p className="text-xs text-gray-500">{user.email}</p>
+                    {build?.version && <p className="text-[11px] text-gray-400 mt-1 font-mono">build {build.version} · {build.branch}</p>}
                   </div>
                   <button
                     onClick={() => { setUserMenuOpen(false); logout() }}
@@ -162,6 +166,12 @@ export function Layout({ activeTab, onTabChange, children }) {
       <main className="max-w-screen-xl mx-auto px-6 py-6">
         {children}
       </main>
+
+      {build?.version && (
+        <div className="fixed bottom-2 right-3 z-30 text-[11px] font-mono text-gray-400 bg-white/80 backdrop-blur px-2 py-0.5 rounded border border-gray-200 pointer-events-none">
+          build {build.version} · {build.branch}
+        </div>
+      )}
     </div>
   )
 }

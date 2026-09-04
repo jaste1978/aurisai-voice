@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { DemoService } from '../demo/demo.service';
+import { TelegramService, escapeHtml } from '../telegram/telegram.service';
 import * as bcrypt from 'bcryptjs';
 
 const TRIAL_DAYS = 3;
@@ -15,7 +16,12 @@ const TRIAL_PERMISSIONS = {
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService, private demo: DemoService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private demo: DemoService,
+    private telegram: TelegramService,
+  ) {}
 
   // Step 1 of trial signup — email a verification code.
   async signupStart(email: string) {
@@ -52,6 +58,16 @@ export class AuthService {
         permissions: TRIAL_PERMISSIONS,
       },
     });
+    // Instant Telegram alert on every new signup (fire-and-forget).
+    this.telegram.sendMessage(
+      `🆕 <b>New signup</b>\n` +
+      `Name: ${escapeHtml(user.name)}\n` +
+      `Email: ${escapeHtml(user.email)}\n` +
+      `Plan: 3-day trial (ends ${user.trialEndsAt ? user.trialEndsAt.toISOString().slice(0, 10) : '—'})\n` +
+      `Limits: ${user.callLimit} calls\n` +
+      `Total users: ${await this.prisma.user.count().catch(() => '?')}`,
+    ).catch(() => {});
+
     const token = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
     return { success: true, token, user: this.serialize(user) };
   }

@@ -219,11 +219,15 @@ export class CallPollerService {
           full.telephony_data?.to_number ||
           '';
         const recordingUrl = full.recording_url || full.telephony_data?.recording_url || null;
+        const ownerId = batch.agentId
+          ? (await this.prisma.ownedAgent.findUnique({ where: { agentId: batch.agentId } }))?.userId ?? null
+          : null;
 
         const created = await this.prisma.call.create({
           data: {
             agentId: batch.agentId || null,
             agentName: batch.agentName || null,
+            ...(ownerId && { userId: ownerId }),
             phoneNumber: phone,
             bolnaExecutionId: executionId,
             status: normalise(rawStatus),

@@ -50,6 +50,10 @@ export class CampaignRunnerService {
       let triggered = 0;
       let failed = 0;
 
+      // Attribute every call this campaign places to the owner of its agent.
+      const ownerId =
+        (await this.prisma.ownedAgent.findUnique({ where: { agentId: campaign.agentId } }))?.userId ?? null;
+
       for (const contact of contacts) {
         const phone = contact.contact_number || contact.phone_number || contact.phone || '';
         if (!phone) { failed++; continue; }
@@ -76,6 +80,7 @@ export class CampaignRunnerService {
             data: {
               agentId: campaign.agentId,
               agentName: campaign.agentName ?? null,
+              ...(ownerId && { userId: ownerId }),
               phoneNumber: phone,
               bolnaExecutionId: executionId || null,
               status: 'queued',

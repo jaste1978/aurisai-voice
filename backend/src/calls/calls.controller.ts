@@ -9,25 +9,25 @@ export class CallsController {
   constructor(private callsService: CallsService) {}
 
   @Get('stats')
-  async getStats() {
-    const data = await this.callsService.getStats();
+  async getStats(@Request() req: ExpressRequest & { user: any }) {
+    const data = await this.callsService.getStats(req.user);
     return { success: true, data };
   }
 
   @Get()
-  async findAll() {
-    const data = await this.callsService.findAll();
+  async findAll(@Request() req: ExpressRequest & { user: any }) {
+    const data = await this.callsService.findAll(req.user);
     return { success: true, data };
   }
 
   @Get('export')
-  async exportCalls(@Query() query: any, @Res() res: Response) {
-    await this.callsService.exportCalls(query, res);
+  async exportCalls(@Request() req: ExpressRequest & { user: any }, @Query() query: any, @Res() res: Response) {
+    await this.callsService.exportCalls(query, res, req.user);
   }
 
   @Get(':id')
-  async findOne(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.callsService.findOne(id);
+  async findOne(@Request() req: ExpressRequest & { user: any }, @Param('id', ParseIntPipe) id: number) {
+    const data = await this.callsService.findOne(id, req.user);
     return { success: true, data };
   }
 
@@ -43,8 +43,8 @@ export class CallsController {
   }
 
   @Post('import')
-  async importFromBolna() {
-    return this.callsService.importFromBolna();
+  async importFromBolna(@Request() req: ExpressRequest & { user: any }) {
+    return this.callsService.importFromBolna(req.user);
   }
 
   @Post()
@@ -67,13 +67,13 @@ export class CallsController {
   }
 
   @Post(':id/sync')
-  async sync(@Param('id', ParseIntPipe) id: number) {
-    return this.callsService.sync(id);
+  async sync(@Request() req: ExpressRequest & { user: any }, @Param('id', ParseIntPipe) id: number) {
+    return this.callsService.sync(id, req.user);
   }
 
   @Post(':id/analyze')
-  async analyze(@Param('id', ParseIntPipe) id: number) {
-    return this.callsService.analyze(id);
+  async analyze(@Request() req: ExpressRequest & { user: any }, @Param('id', ParseIntPipe) id: number) {
+    return this.callsService.analyze(id, req.user);
   }
 
   // Bulk fix: re-sync all completed calls missing recordings

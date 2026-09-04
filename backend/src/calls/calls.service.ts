@@ -33,30 +33,62 @@ const STATUS_MAP: Record<string, string> = {
 export class CallsService {
   constructor(private prisma: PrismaService, private bolna: BolnaService) {}
 
-  async findAll() {
+  private isAdmin(user: any) {
+    return user?.role === 'admin';
+  }
+
+  // Prisma `where` fragment that limits calls to those owned by `user`.
+  // Admins (and unauthenticated internal callers) get no restriction.
+  private ownerWhere(user: any) {
+    return !user || this.isAdmin(user) ? {} : { userId: user.id };
+  }
+
+  // Resolve the owning user for an agent — used by call-creation paths that have
+  // no direct user context (background poller, scheduled campaigns, Bolna import).
+  async ownerForAgent(agentId?: string | null): Promise<number | null> {
+    if (!agentId) return null;
+    const owned = await this.prisma.ownedAgent.findUnique({ where: { agentId } });
+    return owned?.userId ?? null;
+  }
+
+  async findAll(user?: any) {
     const calls = await this.prisma.call.findMany({
+      where: this.ownerWhere(user),
       include: { customer: true },
       orderBy: { createdAt: 'desc' },
     });
     return calls.map(this.serialize);
   }
 
-  async findOne(id: number) {
-    const call = await this.prisma.call.findUnique({ where: { id }, include: { customer: true } });
+  async findOne(id: number, user?: any) {
+    // Scope by owner so one user can't read another's call by guessing its id.
+    const call = await this.prisma.call.findFirst({
+      where: { id, ...this.ownerWhere(user) },
+      include: { customer: true },
+    });
     if (!call) throw new NotFoundException('Call not found');
     return this.serialize(call);
   }
 
   // Pull every execution from Bolna (across all agents) into the calls table,
   // so calls placed outside the app (website demo, API, etc.) also show up.
-  async importFromBolna() {
+  async importFromBolna(user?: any) {
     const agentsRes = await this.bolna.getAgents();
-    const agents = Array.isArray(agentsRes) ? agentsRes : (agentsRes.agents || agentsRes.data || []);
+    let agents = Array.isArray(agentsRes) ? agentsRes : (agentsRes.agents || agentsRes.data || []);
     let imported = 0, updated = 0;
+
+    // Non-admins may only import executions for the agents they own.
+    if (user && !this.isAdmin(user)) {
+      const owned = await this.prisma.ownedAgent.findMany({ where: { userId: user.id } });
+      const ownedIds = new Set(owned.map((o) => o.agentId));
+      agents = agents.filter((a: any) => ownedIds.has(a.id));
+    }
 
     for (const a of agents) {
       const agentId = a.id;
       const agentName = a.agent_name || a.name || null;
+      // Attribute imported calls to the agent's owner (or the importing user).
+      const ownerId = user && !this.isAdmin(user) ? user.id : await this.ownerForAgent(agentId);
       let execs: any[] = [];
       try { execs = await this.bolna.getAgentExecutions(agentId, 200); } catch { continue; }
 
@@ -73,6 +105,7 @@ export class CallsService {
           duration: Math.round(e.conversation_duration || 0),
           transcript: e.transcript || '',
           bolnaResponse: e,
+          ...(ownerId && { userId: ownerId }),
           ...(e.telephony_data?.recording_url && { recordingUrl: e.telephony_data.recording_url }),
           ...(e.summary && { agentResponseOutcome: e.summary }),
         };
@@ -93,15 +126,16 @@ export class CallsService {
     };
   }
 
-  async getStats() {
+  async getStats(user?: any) {
+    const scope = this.ownerWhere(user);
     const [total, completed, failed, inProgress, transferred] = await Promise.all([
-      this.prisma.call.count(),
-      this.prisma.call.count({ where: { status: 'completed' } }),
-      this.prisma.call.count({ where: { status: 'failed' } }),
-      this.prisma.call.count({ where: { status: 'in_progress' } }),
-      this.prisma.call.count({ where: { status: 'transferred' } }),
+      this.prisma.call.count({ where: { ...scope } }),
+      this.prisma.call.count({ where: { ...scope, status: 'completed' } }),
+      this.prisma.call.count({ where: { ...scope, status: 'failed' } }),
+      this.prisma.call.count({ where: { ...scope, status: 'in_progress' } }),
+      this.prisma.call.count({ where: { ...scope, status: 'transferred' } }),
     ]);
-    const avgResult = await this.prisma.call.aggregate({ _avg: { duration: true } });
+    const avgResult = await this.prisma.call.aggregate({ where: { ...scope }, _avg: { duration: true } });
     return {
       total,
       completed,
@@ -138,12 +172,16 @@ export class CallsService {
       customer = await this.prisma.customer.findUnique({ where: { id: Number(customer_id) } });
     }
 
+    // Own the call: prefer the authenticated caller, otherwise the agent's owner.
+    const ownerId = user?.id ?? (await this.ownerForAgent(agent_id));
+
     const call = await this.prisma.call.create({
       data: {
         phoneNumber: phone_number,
         status: 'queued',
         agentId: agent_id,
         language: language || 'en',
+        ...(ownerId && { userId: ownerId }),
         ...(customer && { customerId: customer.id }),
       },
     });
@@ -174,8 +212,8 @@ export class CallsService {
     }
   }
 
-  async sync(id: number) {
-    const call = await this.prisma.call.findUnique({ where: { id } });
+  async sync(id: number, user?: any) {
+    const call = await this.prisma.call.findFirst({ where: { id, ...this.ownerWhere(user) } });
     if (!call) throw new NotFoundException('Call not found');
     if (!call.bolnaExecutionId) throw new BadRequestException('No Bolna execution ID on this call');
 
@@ -198,8 +236,8 @@ export class CallsService {
     return { success: true, message: 'Call synced from Bolna', data: this.serialize(updated) };
   }
 
-  async analyze(id: number) {
-    const call = await this.prisma.call.findUnique({ where: { id }, include: { customer: true } });
+  async analyze(id: number, user?: any) {
+    const call = await this.prisma.call.findFirst({ where: { id, ...this.ownerWhere(user) }, include: { customer: true } });
     if (!call) throw new NotFoundException('Call not found');
 
     const transcript = call.transcript;
@@ -281,6 +319,7 @@ Return ONLY valid JSON, no markdown.`;
   async exportCalls(
     query: { templateId?: string; format?: string; agentId?: string; from?: string; to?: string; callId?: string },
     res: Response,
+    user?: any,
   ) {
     if (!query.templateId) throw new BadRequestException('templateId is required');
 
@@ -291,8 +330,8 @@ Return ONLY valid JSON, no markdown.`;
 
     const fields = template.fields as unknown as FieldDef[];
 
-    // Build call filter
-    const where: any = {};
+    // Build call filter — always scoped to the requesting user (admins: unscoped).
+    const where: any = { ...this.ownerWhere(user) };
     if (query.callId) where.id = Number(query.callId);
     if (query.agentId) where.agentId = query.agentId;
     if (query.from || query.to) {

@@ -588,6 +588,8 @@ ${call.transcript}`;
       bolna_response: call.bolnaResponse,
       behavioral_insights: call.behavioralInsights,
       extracted_data: call.extractedData,
+      metadata: call.metadata ?? null,
+      source: call.source ?? null,
       created_at: call.createdAt,
       updated_at: call.updatedAt,
     };

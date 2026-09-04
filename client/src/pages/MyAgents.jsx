@@ -22,6 +22,7 @@ export function MyAgents() {
   const limit = user?.agent_limit ?? 2
   const atLimit = agents.length >= limit
   const isTrial = user?.is_trial
+  const isAdmin = user?.role === "admin"
   const daysLeft = user?.trial_ends_at ? Math.max(0, Math.ceil((new Date(user.trial_ends_at) - new Date()) / 86400000)) : null
 
   const create = async (e) => {
@@ -47,13 +48,23 @@ export function MyAgents() {
       {isTrial && (
         <div className="rounded-xl border border-[#FF7A50]/40 bg-[#FF7A50]/5 p-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
           <span className="flex items-center gap-1.5 font-semibold text-[#18120E]"><Clock size={15} className="text-[#FF7A50]" /> {daysLeft} days left in trial</span>
-          <span className="text-gray-600">Agents: <strong>{agents.length}/{limit}</strong></span>
           <span className="text-gray-600">Test calls: <strong>{user?.calls_used ?? 0}/{user?.call_limit ?? 20}</strong></span>
           <a href="https://www.aurisaivoice.com/#contact" target="_blank" rel="noreferrer" className="ml-auto text-[#FF7A50] font-semibold">Upgrade →</a>
         </div>
       )}
 
-      {/* Builder */}
+      {/* Preset info (non-admins can't build agents during the trial) */}
+      {!isAdmin && (
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-2 mb-1"><Sparkles size={18} className="text-[#FF7A50]" /><h3 className="font-bold text-[#18120E]">Ready-made demo agents</h3></div>
+            <p className="text-sm text-gray-600">During the trial, AurisAI provides these agents for you. Pick one in <strong>Trigger Call</strong> to place a live demo call — each demo call runs for up to 2 minutes and then ends automatically.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Builder (admin only) */}
+      {isAdmin && (
       <Card>
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4"><Sparkles size={18} className="text-[#FF7A50]" /><h3 className="font-bold text-[#18120E]">Build a new agent</h3></div>
@@ -81,12 +92,13 @@ export function MyAgents() {
           <style>{`.ma-in{width:100%;background:#fff;border:1px solid #e5e0d8;border-radius:10px;padding:10px 12px;font-size:.92rem}.ma-in:focus{outline:none;border-color:#FF7A50}`}</style>
         </CardContent>
       </Card>
+      )}
 
       {/* List */}
       {loading ? (
         <div className="text-center py-12 text-gray-400">Loading your agents…</div>
       ) : agents.length === 0 ? (
-        <Card><CardContent className="py-14 text-center text-gray-400"><Bot size={28} className="mx-auto mb-2 opacity-40" />No agents yet. Build your first one above.</CardContent></Card>
+        <Card><CardContent className="py-14 text-center text-gray-400"><Bot size={28} className="mx-auto mb-2 opacity-40" />{isAdmin ? "No agents yet. Build your first one above." : "No demo agents available right now."}</CardContent></Card>
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {agents.map(a => (
@@ -96,12 +108,12 @@ export function MyAgents() {
                 <p className="text-xs text-gray-400 mt-1 truncate">ID: {a.id}</p>
                 {a.status && <span className="inline-block mt-2 text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded capitalize">{a.status}</span>}
               </div>
-              <button onClick={() => del(a)} className="text-gray-400 hover:text-red-500 p-1" title="Delete agent"><Trash2 size={16} /></button>
+              {isAdmin && <button onClick={() => del(a)} className="text-gray-400 hover:text-red-500 p-1" title="Delete agent"><Trash2 size={16} /></button>}
             </CardContent></Card>
           ))}
         </div>
       )}
-      <p className="text-xs text-gray-400">Tip: after building an agent, use <strong>Trigger Call</strong> to test it on your phone (trial calls are capped).</p>
+      <p className="text-xs text-gray-400">Tip: use <strong>Trigger Call</strong> to test an agent on your phone. Demo calls run up to 2 minutes, then end automatically (trial calls are capped).</p>
     </div>
   )
 }

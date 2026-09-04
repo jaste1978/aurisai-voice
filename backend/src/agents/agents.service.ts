@@ -1,39 +1,31 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { BolnaService } from '../bolna/bolna.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { PRESET_AGENTS } from './presets';
 
 @Injectable()
 export class AgentsService {
   constructor(private bolna: BolnaService, private prisma: PrismaService) {}
 
   private isAdmin(user: any) { return user?.role === 'admin'; }
-  private trialExpired(user: any) {
-    return user?.isTrial && user?.trialEndsAt && new Date(user.trialEndsAt) < new Date();
-  }
 
   async findAll(user?: any) {
+    // Non-admins get the shared preset agents (they can't create their own during the trial).
+    if (user && !this.isAdmin(user)) {
+      return PRESET_AGENTS.map((p) => ({ id: p.agentId, name: p.name, status: 'preset', useCase: p.useCase }));
+    }
+
+    // Admin sees every agent in the Bolna account.
     const res = await this.bolna.getAgents();
     const agents = Array.isArray(res) ? res : (res.agents || res.data || []);
-    const all = agents.map((a: any) => ({ id: a.id, name: a.agent_name || a.name, status: a.status }));
-
-    if (!user || this.isAdmin(user)) return all; // admin sees everything
-
-    // everyone else sees ONLY the agents they own
-    const owned = await this.prisma.ownedAgent.findMany({ where: { userId: user.id } });
-    const ownedIds = new Set(owned.map((o) => o.agentId));
-    return all.filter((a: any) => ownedIds.has(a.id));
+    return agents.map((a: any) => ({ id: a.id, name: a.agent_name || a.name, status: a.status }));
   }
 
   async create(user: any, data: any) {
-    if (this.trialExpired(user)) {
-      throw new BadRequestException('Your 14-day trial has ended. Upgrade to keep building agents.');
-    }
+    // During the trial/test period only admins may create agents; everyone else
+    // uses the provided preset agents.
     if (!this.isAdmin(user)) {
-      const count = await this.prisma.ownedAgent.count({ where: { userId: user.id } });
-      const limit = user.agentLimit ?? 2;
-      if (count >= limit) {
-        throw new BadRequestException(`You've reached your limit of ${limit} agents on the trial.`);
-      }
+      throw new ForbiddenException('Agents are provided by AurisAI during the trial — pick a ready-made agent to start a demo call.');
     }
 
     const name = (data.name || '').trim();
@@ -107,7 +99,7 @@ export class AgentsService {
                 provider_config: { voice: 'Kajal', engine: 'neural', language: 'en-IN' },
               },
             },
-            task_config: { hangup_after_silence: 12, call_terminate: 180, ambient_noise: false },
+            task_config: { hangup_after_silence: 10, call_terminate: 120, ambient_noise: false },
           },
         ],
       },

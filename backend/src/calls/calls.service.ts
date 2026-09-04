@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Response } from 'express';
 import * as ExcelJS from 'exceljs';
+import { PRESET_AGENT_IDS } from '../agents/presets';
 
 interface FieldDef {
   key: string;
@@ -151,14 +152,17 @@ export class CallsService {
     const { customer_id, agent_id, phone_number, language } = data;
     if (!agent_id || !phone_number) throw new BadRequestException('agent_id and phone_number are required');
 
-    // Trial guardrails: own-agent only + 14-day window + call cap
+    // Trial guardrails: preset/own agent only + trial window + call cap
     if (user?.isTrial) {
       if (user.trialEndsAt && new Date(user.trialEndsAt) < new Date()) {
-        throw new BadRequestException('Your 14-day trial has ended. Upgrade to keep calling.');
+        throw new BadRequestException('Your 3-day trial has ended. Upgrade to keep calling.');
       }
-      const owned = await this.prisma.ownedAgent.findUnique({ where: { agentId: agent_id } });
-      if (!owned || owned.userId !== user.id) {
-        throw new ForbiddenException('You can only place calls with your own agents.');
+      // Trial users may call the shared preset agents, or any agent they own.
+      if (!PRESET_AGENT_IDS.has(agent_id)) {
+        const owned = await this.prisma.ownedAgent.findUnique({ where: { agentId: agent_id } });
+        if (!owned || owned.userId !== user.id) {
+          throw new ForbiddenException('You can only place calls with the provided demo agents.');
+        }
       }
       const fresh = await this.prisma.user.findUnique({ where: { id: user.id } });
       if ((fresh?.callsUsed ?? 0) >= (fresh?.callLimit ?? 20)) {

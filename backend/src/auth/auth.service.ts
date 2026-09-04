@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { DemoService } from '../demo/demo.service';
 import * as bcrypt from 'bcryptjs';
 
-const TRIAL_DAYS = 14;
+const TRIAL_DAYS = 3;
 const TRIAL_PERMISSIONS = {
   dashboard: true,
   calls: { view: true, trigger: true },
@@ -26,7 +26,7 @@ export class AuthService {
     return this.demo.sendOtp({ email }); // sends the 6-digit code
   }
 
-  // Step 2 — verify code, set password, create a 14-day trial account.
+  // Step 2 — verify code, set password, create a 3-day trial account.
   async signupVerify(data: any) {
     const email = (data.email || '').trim().toLowerCase();
     const name = (data.name || '').trim() || email.split('@')[0];

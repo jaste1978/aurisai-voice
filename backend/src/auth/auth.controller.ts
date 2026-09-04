@@ -26,6 +26,19 @@ export class AuthController {
     return this.authService.signupVerify(body);
   }
 
+  // Public password reset (email OTP)
+  @Post('forgot-password')
+  @HttpCode(200)
+  async forgotPassword(@Body() body: { email: string }) {
+    return this.authService.forgotPassword(body.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() body: any) {
+    return this.authService.resetPassword(body);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   async me(@Request() req: ExpressRequest & { user: any }) {

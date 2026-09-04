@@ -76,6 +76,30 @@ export class AuthService {
     return { success: true, token, user: this.serialize(user) };
   }
 
+  // Step 1 of reset — email a code (only if the account exists; response never reveals which).
+  async forgotPassword(email: string) {
+    email = (email || '').trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (user) {
+      try { await this.demo.sendOtp({ email }); } catch { /* swallow (cooldown) to avoid leaking existence */ }
+    }
+    return { success: true, message: 'If an account exists for that email, a reset code has been sent.' };
+  }
+
+  // Step 2 of reset — verify the code and set a new password (auto-logs in).
+  async resetPassword(data: any) {
+    const email = (data.email || '').trim().toLowerCase();
+    const password = data.password || '';
+    if (password.length < 6) throw new BadRequestException('Password must be at least 6 characters.');
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user) throw new BadRequestException('Invalid or expired reset request.');
+    await this.demo.checkOtp(email, data.otp); // throws if the code is wrong/expired
+    const hash = await bcrypt.hash(password, 10);
+    await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash: hash } });
+    const token = this.jwt.sign({ sub: user.id, email: user.email, role: user.role });
+    return { success: true, token, user: this.serialize(user) };
+  }
+
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.isActive) throw new UnauthorizedException('Invalid credentials');

@@ -38,8 +38,25 @@ export function Login() {
     else setError(res.error || 'Verification failed')
   }
 
+  const startReset = async (e) => {
+    e.preventDefault(); setError(''); setInfo(''); setLoading(true)
+    const res = await api.forgotPassword(form.email)
+    setLoading(false)
+    if (res.success) { setStep('verify'); setInfo('If that email has an account, we sent a 6-digit code.') }
+    else setError(res.error || 'Could not start reset')
+  }
+
+  const finishReset = async (e) => {
+    e.preventDefault(); setError(''); setLoading(true)
+    const res = await api.resetPassword({ email: form.email, otp: form.otp, password: form.password })
+    setLoading(false)
+    if (res.success && res.token) completeAuth(res.token, res.user)   // reset + auto sign-in
+    else setError(res.error || 'Reset failed')
+  }
+
   const toSignup = () => { setMode('signup'); setStep('email'); setError(''); setInfo('') }
   const toSignin = () => { setMode('signin'); setError(''); setInfo('') }
+  const toReset  = () => { setMode('reset'); setStep('email'); setError(''); setInfo('') }
 
   return (
     <div className="min-h-screen bg-[#0F0D0A] flex items-center justify-center p-4">
@@ -66,8 +83,11 @@ export function Login() {
                 {error && <Err>{error}</Err>}
                 <Button type="submit" disabled={loading} className="w-full h-10 text-base">{loading ? 'Signing in…' : 'Sign In'}</Button>
               </form>
-              <p className="text-center text-sm text-gray-500 mt-5">
-                New here? <button onClick={toSignup} className="text-[#FF7A50] font-semibold">Start your 14-day free trial →</button>
+              <p className="text-center text-sm mt-3">
+                <button onClick={toReset} className="text-gray-500 hover:text-[#FF7A50]">Forgot password?</button>
+              </p>
+              <p className="text-center text-sm text-gray-500 mt-4">
+                New here? <button onClick={toSignup} className="text-[#FF7A50] font-semibold">Start your free trial →</button>
               </p>
             </>
           )}
@@ -75,7 +95,7 @@ export function Login() {
           {mode === 'signup' && step === 'email' && (
             <>
               <h2 className="text-xl font-bold text-[#18120E]">Start your free trial</h2>
-              <p className="text-sm text-gray-500 mt-1 mb-6">14 days · build up to 2 AI agents · no card needed.</p>
+              <p className="text-sm text-gray-500 mt-1 mb-6">3-day trial · demo AI agents ready to call · no card needed.</p>
               <form onSubmit={startSignup} className="space-y-4">
                 <Field icon={Mail} label="Work email"><Input type="email" placeholder="you@company.com" value={form.email} onChange={e => set('email', e.target.value)} autoFocus /></Field>
                 {error && <Err>{error}</Err>}
@@ -96,6 +116,33 @@ export function Login() {
                 <Field icon={Lock} label="Create a password"><Input type="password" placeholder="min 6 characters" value={form.password} onChange={e => set('password', e.target.value)} /></Field>
                 {error && <Err>{error}</Err>}
                 <Button type="submit" disabled={loading} className="w-full h-10 text-base">{loading ? 'Creating…' : 'Start trial'}</Button>
+              </form>
+              <p className="text-center text-sm text-gray-500 mt-5"><button onClick={() => setStep('email')} className="text-[#FF7A50]">← Change email / resend</button></p>
+            </>
+          )}
+
+          {mode === 'reset' && step === 'email' && (
+            <>
+              <h2 className="text-xl font-bold text-[#18120E]">Reset your password</h2>
+              <p className="text-sm text-gray-500 mt-1 mb-6">Enter your email and we'll send a 6-digit code.</p>
+              <form onSubmit={startReset} className="space-y-4">
+                <Field icon={Mail} label="Email"><Input type="email" placeholder="you@company.com" value={form.email} onChange={e => set('email', e.target.value)} autoFocus /></Field>
+                {error && <Err>{error}</Err>}
+                <Button type="submit" disabled={loading} className="w-full h-10 text-base">{loading ? 'Sending code…' : 'Send reset code'}</Button>
+              </form>
+              <p className="text-center text-sm text-gray-500 mt-5"><button onClick={toSignin} className="text-[#FF7A50] font-semibold">← Back to sign in</button></p>
+            </>
+          )}
+
+          {mode === 'reset' && step === 'verify' && (
+            <>
+              <h2 className="text-xl font-bold text-[#18120E]">Set a new password</h2>
+              {info && <p className="text-sm text-green-600 mt-1 mb-4">{info} ({form.email})</p>}
+              <form onSubmit={finishReset} className="space-y-4">
+                <Field icon={Mail} label="6-digit code"><Input inputMode="numeric" maxLength={6} placeholder="••••••" value={form.otp} onChange={e => set('otp', e.target.value)} autoFocus /></Field>
+                <Field icon={Lock} label="New password"><Input type="password" placeholder="min 6 characters" value={form.password} onChange={e => set('password', e.target.value)} /></Field>
+                {error && <Err>{error}</Err>}
+                <Button type="submit" disabled={loading} className="w-full h-10 text-base">{loading ? 'Resetting…' : 'Reset password'}</Button>
               </form>
               <p className="text-center text-sm text-gray-500 mt-5"><button onClick={() => setStep('email')} className="text-[#FF7A50]">← Change email / resend</button></p>
             </>

@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -38,6 +40,8 @@ const staticModules = existsSync(publicPath)
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
+    // Global IP rate limit — blunts brute-force / flooding. 600 req/min/IP.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 600 }]),
     ...staticModules,
     PrismaModule,
     BolnaModule,
@@ -60,5 +64,6 @@ const staticModules = existsSync(publicPath)
     PublicApiModule,
   ],
   controllers: [AppController],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

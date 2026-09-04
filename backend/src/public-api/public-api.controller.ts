@@ -1,12 +1,14 @@
 import {
   Controller, Get, Post, Body, Param, Query, UseGuards, Request,
   ParseIntPipe, BadRequestException, ForbiddenException, NotFoundException,
+  HttpException, HttpStatus,
 } from '@nestjs/common';
 import { ApiKeyGuard } from '../api-keys/api-key.guard';
 import { ApiKeysService } from '../api-keys/api-keys.service';
 import { CallsService } from '../calls/calls.service';
 import { AgentsService } from '../agents/agents.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { TelegramService, escapeHtml } from '../telegram/telegram.service';
 import { PRESET_AGENTS, PRESET_AGENT_IDS } from '../agents/presets';
 import { Request as ExpressRequest } from 'express';
 
@@ -19,6 +21,7 @@ export class PublicApiController {
     private agents: AgentsService,
     private apiKeys: ApiKeysService,
     private prisma: PrismaService,
+    private telegram: TelegramService,
   ) {}
 
   // Preset alias (hr|sales|support) → agent id; otherwise treat as a raw id.
@@ -56,10 +59,38 @@ export class PublicApiController {
     const agentId = this.resolveAgent(agentInput);
     if (!agentId) throw new BadRequestException('Invalid agent');
 
+    // Destination guard: enforce E.164 + a configurable country allowlist (default +91).
+    if (!/^\+[1-9]\d{7,14}$/.test(phone)) {
+      throw new BadRequestException('phone_number must be E.164 format, e.g. +919876543210');
+    }
+    const allowed = (process.env.ALLOWED_COUNTRY_CODES || '+91').split(',').map((s) => s.trim()).filter(Boolean);
+    if (!allowed.some((cc) => phone.startsWith(cc))) {
+      throw new ForbiddenException(`Calls to this destination are not enabled (allowed prefixes: ${allowed.join(', ')})`);
+    }
+
     // Preset agents are open to any key; other agents must be owned by the account.
     if (!PRESET_AGENT_IDS.has(agentId)) {
       const owned = await this.prisma.ownedAgent.findFirst({ where: { agentId, userId: req.user.id } });
       if (!owned) throw new ForbiddenException('This API key cannot use that agent');
+    }
+
+    // Per-key abuse limits: 10 calls/min and dailyLimit per rolling 24h.
+    const keyId = req.apiKey?.id;
+    if (keyId) {
+      const [lastMin, last24h] = await Promise.all([
+        this.prisma.call.count({ where: { apiKeyId: keyId, createdAt: { gte: new Date(Date.now() - 60_000) } } }),
+        this.prisma.call.count({ where: { apiKeyId: keyId, createdAt: { gte: new Date(Date.now() - 86_400_000) } } }),
+      ]);
+      if (lastMin >= 10) {
+        throw new HttpException('Rate limit exceeded: max 10 calls per minute', HttpStatus.TOO_MANY_REQUESTS);
+      }
+      const dailyLimit = req.apiKey.dailyLimit ?? 200;
+      if (last24h >= dailyLimit) {
+        this.telegram.sendMessage(
+          `🚫 <b>API daily limit hit</b>\nKey #${keyId} (${escapeHtml(req.user?.email || '')}) reached ${dailyLimit} calls/24h.`,
+        ).catch(() => {});
+        throw new HttpException(`Daily call limit reached (${dailyLimit}/24h)`, HttpStatus.TOO_MANY_REQUESTS);
+      }
     }
 
     const result = await this.calls.trigger(

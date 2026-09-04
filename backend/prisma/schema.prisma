@@ -119,6 +119,7 @@ model ApiKey {
   userId     Int       @map("user_id")                       // account the key acts as
   user       User      @relation(fields: [userId], references: [id])
   active     Boolean   @default(true)
+  dailyLimit Int       @default(200) @map("daily_limit")   // max calls per rolling 24h
   callsMade  Int       @default(0) @map("calls_made")
   lastUsedAt DateTime? @map("last_used_at") @db.Timestamptz
   createdBy  Int?      @map("created_by")

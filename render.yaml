@@ -27,6 +27,10 @@ services:
         sync: false           # BotFather token — enables hourly reports + call-health alerts
       - key: TELEGRAM_CHAT_ID
         sync: false           # chat/group id the bot posts to
+      - key: ALLOWED_COUNTRY_CODES
+        value: "+91"          # comma-separated dial-code allowlist for API calls
+      - key: WEBHOOK_SECRET
+        sync: false           # if set, /webhooks/bolna requires ?secret=… (append to WEBHOOK_URL)
       - key: DATABASE_URL
         fromDatabase:
           name: aurisai-voice-db

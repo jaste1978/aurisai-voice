@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { PhoneCall, CheckCircle } from "lucide-react"
 
 export function TriggerCall() {
+  const { hasPermission } = useAuth()
+  const canUseCustomers = hasPermission('customers', 'view')
   const [agents, setAgents] = useState([])
   const [customers, setCustomers] = useState([])
   const [form, setForm] = useState({ customer_id: '', agent_id: '', phone_number: '', language: 'en' })
@@ -15,8 +18,9 @@ export function TriggerCall() {
 
   useEffect(() => {
     api.getAgents().then(r => setAgents(r.data || []))
-    api.getCustomers().then(r => setCustomers(r.data || []))
-  }, [])
+    // Only pull the saved-customers list for users who can use it (admins).
+    if (canUseCustomers) api.getCustomers().then(r => setCustomers(r.data || []))
+  }, [canUseCustomers])
 
   const onCustomerChange = (e) => {
     const c = customers.find(c => String(c.id) === e.target.value)
@@ -45,16 +49,19 @@ export function TriggerCall() {
       <Card>
         <CardContent className="pt-6">
           <form onSubmit={submit} className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Customer (optional)</label>
-              <select className="mt-1 flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#18120E]" value={form.customer_id} onChange={onCustomerChange}>
-                <option value="">Select customer...</option>
-                {customers.map(c => <option key={c.id} value={c.id}>{c.name} — {c.phone_number}</option>)}
-              </select>
-            </div>
+            {canUseCustomers && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Customer (optional)</label>
+                <select className="mt-1 flex h-9 w-full rounded-md border border-gray-300 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#18120E]" value={form.customer_id} onChange={onCustomerChange}>
+                  <option value="">Select customer...</option>
+                  {customers.map(c => <option key={c.id} value={c.id}>{c.name} — {c.phone_number}</option>)}
+                </select>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-gray-700">Phone Number *</label>
               <Input className="mt-1" placeholder="+919876543210" value={form.phone_number} onChange={e => setForm({...form, phone_number: e.target.value})} />
+              <p className="mt-1 text-xs text-gray-500">Enter the number to call (with country code, e.g. +91…). The agent will call it — demo calls run up to 2 minutes.</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700">Agent *</label>

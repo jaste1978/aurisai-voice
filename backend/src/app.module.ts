@@ -26,6 +26,7 @@ import { TelegramModule } from './telegram/telegram.module';
 import { MonitoringModule } from './monitoring/monitoring.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { PublicApiModule } from './public-api/public-api.module';
+import { VoiceModule } from './voice/voice.module';
 
 // Only serve React static files when production build exists
 const publicPath = join(__dirname, '..', 'public');
@@ -62,6 +63,7 @@ const staticModules = existsSync(publicPath)
     MonitoringModule,
     ApiKeysModule,
     PublicApiModule,
+    VoiceModule,
   ],
   controllers: [AppController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
